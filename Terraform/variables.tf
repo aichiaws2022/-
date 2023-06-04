@@ -4,12 +4,12 @@
 
 variable "site_domain" {
   # 公開するサイトのドメイン
-  default = "myawsportfolio.click"
+  default = ""
 }
 
 variable "root_domain" {
   # 公開するサイトのルートドメイン
-  default = "myawsportfolio.click"
+  default = ""
 }
 
 data "aws_caller_identity" "current" {}
