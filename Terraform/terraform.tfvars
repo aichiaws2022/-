@@ -1,0 +1,2 @@
+project     = "wordpress"
+environment = "test"
