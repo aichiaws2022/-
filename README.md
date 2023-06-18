@@ -37,7 +37,7 @@ No.|サービス名|主な用途|備考
 11|SNS|メール通知|CloudWatchアラームと連携して管理者に通知
 12|VPC Endpoint・S3|Session Manager通信用|
 13|CloudFormation・Terraform|IaCツール|
-14|Session Manager|EC2との通信|EC2へ安全に接続
+14|Session Manager|EC2との通信|EC2へセキュアに接続
 15|Secrets Manager|パスワード管理|RDSのパスワードを自動生成、インフラ構築後コンソールから確認可能
 16|NAT Gateway|NAT|プライベートサブネットのインスタンスがWordpress用データをダウンロードする際に使用。ダウンロード後、削除することでコストを抑えることが可能
 17|Elastic File System|ファイルストレージ|Wordpress用ディレクトリをEFS上に作成
