@@ -1,0 +1,108 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  CloudWatchAlarm1:
+  #システムエラー時に通知と復旧を行うアラーム
+    Type: "AWS::CloudWatch::Alarm"
+    Properties:
+      AlarmName: "WP-CWA-1"
+      AlarmDescription: "Alarm for monitoring StatusCheckFailed_System"
+      ActionsEnabled: true
+      AlarmActions: 
+      - "arn:aws:automate:ap-northeast-1:ec2:recover"
+      - !ImportValue Alarm-sns-topic-arn
+      MetricName: "StatusCheckFailed_System"
+      Namespace: "AWS/EC2"
+      Statistic: "Maximum"
+      Dimensions: 
+      - 
+        Name: "InstanceId"
+        Value: !ImportValue clf-ec2-1
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: "GreaterThanOrEqualToThreshold"
+      TreatMissingData: "ignore"
+
+  CloudWatchAlarm2:
+  #システムエラー時に通知と復旧を行うアラームを作成
+    Type: "AWS::CloudWatch::Alarm"
+    Properties:
+      AlarmName: "WP-CWA-2"
+      AlarmDescription: "Alarm for monitoring StatusCheckFailed_System"
+      ActionsEnabled: true
+      AlarmActions: 
+      - "arn:aws:automate:ap-northeast-1:ec2:recover"
+      - !ImportValue Alarm-sns-topic-arn
+      MetricName: "StatusCheckFailed_System"
+      Namespace: "AWS/EC2"
+      Statistic: "Maximum"
+      Dimensions: 
+      - 
+        Name: "InstanceId"
+        Value: !ImportValue clf-ec2-2
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: "GreaterThanOrEqualToThreshold"
+      TreatMissingData: "ignore"
+  
+  EC2CPUUtilizationAlarm1:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !ImportValue Alarm-sns-topic-arn  # アラーム時のアクション
+      AlarmName: cpu-alarm
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average  # 平均
+      Period: 60  # 期間[s]
+      EvaluationPeriods: 2  # 閾値超過回数
+      Threshold: 80  # 閾値
+      TreatMissingData: breaching  # 欠落データは不良
+      
+      ComparisonOperator: GreaterThanOrEqualToThreshold  # 閾値以上
+      Dimensions:
+        - Name: InstanceId
+          Value: !ImportValue clf-ec2-1
+
+  EC2CPUUtilizationAlarm2:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !ImportValue Alarm-sns-topic-arn  # アラーム時のアクション
+      AlarmName: cpu-alarm2
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average  # 平均
+      Period: 60  # 期間[s]
+      EvaluationPeriods: 2  # 閾値超過回数
+      Threshold: 80  # 閾値
+      TreatMissingData: breaching  # 欠落データは不良
+      
+      ComparisonOperator: GreaterThanOrEqualToThreshold  # 閾値以上
+      Dimensions:
+        - Name: InstanceId
+          Value: !ImportValue clf-ec2-2
+
+  ALBHealthyHostCountFtAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !ImportValue Alarm-sns-topic-arn  # アラーム時のアクション
+      AlarmName: ALB-Alarm
+      MetricName: HealthyHostCount
+      Namespace: AWS/ApplicationELB
+      Statistic: Minimum  
+      Period: 60  # 期間[s]
+      EvaluationPeriods: 1  # 閾値超過回数
+      Threshold: 1  # 閾値
+      TreatMissingData: breaching  # 欠落データは不良
+      OKActions:
+        - !ImportValue Alarm-sns-topic-arn  # 復旧時のアクション
+      ComparisonOperator: LessThanOrEqualToThreshold  
+      Dimensions:
+        - Name: TargetGroup
+          Value: !ImportValue alb-targetgroup
+        - Name: LoadBalancer
+          Value: !ImportValue alb-arn
+        

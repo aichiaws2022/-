@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+ 
+  SessionManagerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'ec2.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      
+      RoleName: SessionManager-role-cfn
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+  InstanceProfile:
+    
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      
+      Roles:
+        - !Ref SessionManagerRole
+Outputs:
+  InstanceProfileOutput:
+    Value: !Ref InstanceProfile
+    Export:
+      Name: InstanceProfile

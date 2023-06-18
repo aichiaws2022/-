@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  DBUsername:
+    Description: Username for MySQL database access
+    Type: String
+    MinLength: 4
+    MaxLength: 16
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+
+Resources:
+#サブネットグループ作成
+  RDSSubnetGroup:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: WP-dbsubnet
+      DBSubnetGroupName: WP-dbsubnet
+      SubnetIds:
+      - !ImportValue prisubnet-3
+      - !ImportValue prisubnet-4
+      Tags:
+      -
+        Key: Name
+        Value: WP-dbsubnet
+
+  SGRDS:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: SGRDS
+      GroupDescription: SGRDS
+      VpcId: !ImportValue wordpress-vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !ImportValue sg-for-ec2
+      Tags:
+        - Key: Name
+          Value: SGRDS
+
+
+
+#RDSインスタンス作成
+  RDSInstance:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      DBInstanceIdentifier: WP-rds
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      EngineVersion: 8.0.32
+      MasterUsername: !Ref DBUsername
+      ManageMasterUserPassword: true
+      DBName: wordpress
+      BackupRetentionPeriod: 0
+      MultiAZ: true
+      PubliclyAccessible: false
+      StorageType: gp2
+      AllocatedStorage: 20
+      StorageEncrypted: true
+      
+      CopyTagsToSnapshot: false
+      DeletionProtection: false
+      DeleteAutomatedBackups: true
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      VPCSecurityGroups: 
+      - !Ref SGRDS
+      Tags:
+      -
+        Key: Name
+        Value: WP-rds

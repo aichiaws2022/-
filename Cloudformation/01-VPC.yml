@@ -1,0 +1,282 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+    VPC:
+        Type: "AWS::EC2::VPC"
+        Properties:
+            CidrBlock: "10.0.0.0/16"
+            EnableDnsSupport: true
+            EnableDnsHostnames: true
+            InstanceTenancy: "default"
+            Tags: 
+             -
+                Key: "Name"
+                Value: "WP-vpc"
+
+    InternetGateway:
+        Type: "AWS::EC2::InternetGateway"
+        Properties:
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "WP-IGW"
+
+    NatGateway1:
+        Type: AWS::EC2::NatGateway
+        Properties:
+            AllocationId: !GetAtt NATGatewayEIP.AllocationId
+            SubnetId: !Ref EC2Subnet1
+            Tags:
+               - Key: Name
+                 Value: nat1
+    
+    NATGatewayEIP: 
+       Type: "AWS::EC2::EIP"
+       Properties: 
+            Domain: vpc
+
+    AttachGateway:
+        Type: "AWS::EC2::VPCGatewayAttachment"
+        Properties:
+            InternetGatewayId: !Ref InternetGateway
+            VpcId: !Ref  VPC
+
+    EC2Subnet1:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+            AvailabilityZone: !Sub "${AWS::Region}a"
+            CidrBlock: "10.0.1.0/24"
+            VpcId: !Ref VPC
+            MapPublicIpOnLaunch: true
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "Public-subnet-1a"
+
+    EC2Subnet2:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+            AvailabilityZone: !Sub "${AWS::Region}c"
+            CidrBlock: "10.0.2.0/24"
+            VpcId: !Ref VPC
+            MapPublicIpOnLaunch: true
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "Public-subnet-2c"
+
+    EC2Subnet3:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+            AvailabilityZone: !Sub "${AWS::Region}a"
+            CidrBlock: "10.0.11.0/24"
+            VpcId: !Ref VPC
+            MapPublicIpOnLaunch: false
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "Private-subnet-11a"
+
+    EC2Subnet4:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+            AvailabilityZone: !Sub "${AWS::Region}c"
+            CidrBlock: "10.0.12.0/24"
+            VpcId: !Ref VPC
+            MapPublicIpOnLaunch: false
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "Private-subnet-12c"
+
+    EC2Subnet5:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+            AvailabilityZone: !Sub "${AWS::Region}a"
+            CidrBlock: "10.0.21.0/24"
+            VpcId: !Ref VPC
+            MapPublicIpOnLaunch: false
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "Private-subnet-21a"
+    EC2Subnet6:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+            AvailabilityZone: !Sub "${AWS::Region}c"
+            CidrBlock: "10.0.22.0/24"
+            VpcId: !Ref VPC
+            MapPublicIpOnLaunch: false
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "Private-subnet-22c"
+    
+
+    EC2RouteTable1:
+        Type: "AWS::EC2::RouteTable"
+        Properties:
+            VpcId: !Ref VPC
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "RT-public"
+
+    EC2RoutePublic:
+        Type: AWS::EC2::Route
+        Properties:
+            RouteTableId: !Ref EC2RouteTable1
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId: !Ref InternetGateway                
+
+    EC2RouteTable2:
+        Type: "AWS::EC2::RouteTable"
+        Properties:
+            VpcId: !Ref VPC
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "rds-private"
+
+    PrivateRouteTable:
+        Type: "AWS::EC2::RouteTable"
+        Properties: 
+            VpcId: !Ref VPC
+            Tags: 
+              - Key: Name
+                Value: private-routetable-cf
+
+    
+    RouteNATGateway:
+        Type: AWS::EC2::Route
+        Properties:
+            RouteTableId: !Ref PrivateRouteTable
+            DestinationCidrBlock: '0.0.0.0/0'
+            NatGatewayId: !Ref NatGateway1
+
+    PrivateSubnetARouteTableAssociation1: 
+        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Properties: 
+           SubnetId: !Ref EC2Subnet3 
+           RouteTableId: !Ref PrivateRouteTable
+
+    PrivateSubnetARouteTableAssociation2: 
+        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Properties: 
+           SubnetId: !Ref EC2Subnet4 
+           RouteTableId: !Ref PrivateRouteTable
+
+
+    EC2SubnetRouteTableAssociation:
+        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Properties:
+            RouteTableId: !Ref EC2RouteTable1
+            SubnetId: !Ref EC2Subnet1
+
+    EC2SubnetRouteTableAssociation2:
+        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Properties:
+            RouteTableId: !Ref EC2RouteTable1
+            SubnetId: !Ref EC2Subnet2
+
+    EC2SubnetRouteTableAssociation3:
+        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Properties:
+            RouteTableId: !Ref EC2RouteTable2
+            SubnetId: !Ref EC2Subnet5
+
+    EC2SubnetRouteTableAssociation4:
+        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Properties:
+            RouteTableId: !Ref EC2RouteTable2
+            SubnetId: !Ref EC2Subnet6
+
+
+    EndpointSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+          GroupDescription: EndpointSecurityGroup
+          VpcId: !Ref VPC
+          Tags:
+            - Key: Name
+              Value: EndpointSecurityGroup
+          SecurityGroupIngress:
+             - IpProtocol: tcp
+               FromPort: 443
+               ToPort: 443
+               CidrIp: 10.0.0.0/16
+
+    EndpointSSM:
+        Type: AWS::EC2::VPCEndpoint
+        Properties:
+           PrivateDnsEnabled: true
+           SecurityGroupIds:
+            - !Ref EndpointSecurityGroup
+           ServiceName: !Sub com.amazonaws.${AWS::Region}.ssm
+           SubnetIds:
+            - !Ref EC2Subnet3
+           VpcEndpointType: Interface
+           VpcId: !Ref VPC
+    EndpointSSMMessages:
+      Type: AWS::EC2::VPCEndpoint
+      Properties:
+        PrivateDnsEnabled: true
+        SecurityGroupIds:
+           - !Ref EndpointSecurityGroup
+        ServiceName: !Sub com.amazonaws.${AWS::Region}.ssmmessages
+        SubnetIds:
+           - !Ref EC2Subnet3
+        VpcEndpointType: Interface
+        VpcId: !Ref VPC
+
+    EndpointEC2Messages:
+       Type: AWS::EC2::VPCEndpoint
+       Properties:
+         PrivateDnsEnabled: true
+         SecurityGroupIds:
+           - !Ref EndpointSecurityGroup
+         ServiceName: !Sub  com.amazonaws.${AWS::Region}.ec2messages
+         SubnetIds:
+          - !Ref EC2Subnet3
+         VpcEndpointType: Interface
+         VpcId: !Ref VPC
+
+
+    EndpointS3:
+       Type: AWS::EC2::VPCEndpoint
+       Properties:
+         RouteTableIds:
+           - !Ref PrivateRouteTable
+         ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+         VpcEndpointType: Gateway
+         VpcId: !Ref VPC
+
+
+Outputs:
+    VpcOutput:
+        Value: !Ref VPC
+        Export:
+            Name: wordpress-vpc
+    SubnetOutput1:
+        Value: !Ref EC2Subnet1
+        Export:
+            Name: pubsubnet-1
+    SubnetOutput2:
+        Value: !Ref EC2Subnet2
+        Export:
+            Name: pubsubnet-2 
+    SubnetOutput3:
+        Value: !Ref EC2Subnet3
+        Export:
+            Name: prisubnet-1
+    SubnetOutput4:
+        Value: !Ref EC2Subnet4
+        Export:
+            Name: prisubnet-2
+    SubnetOutput5:
+        Value: !Ref EC2Subnet5
+        Export:
+            Name: prisubnet-3 
+    SubnetOutput6:
+        Value: !Ref EC2Subnet6
+        Export:
+            Name: prisubnet-4

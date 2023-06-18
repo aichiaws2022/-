@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  WebACL:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      DefaultAction:
+        Allow: {}
+      Name: WAFforWP
+      Rules:
+        - Name: WordPressRuleSet
+          OverrideAction:
+            None: {}
+          Priority: 0
+          Statement:
+            ManagedRuleGroupStatement:
+              Name: AWSManagedRulesWordPressRuleSet
+              VendorName: AWS
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: test-watch
+            SampledRequestsEnabled: true
+      Scope: REGIONAL
+      VisibilityConfig:
+        CloudWatchMetricsEnabled: true
+        MetricName: test2
+        SampledRequestsEnabled: true
+        
+  WebACLAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties: 
+      ResourceArn: !ImportValue alb-arn
+      WebACLArn: !GetAtt WebACL.Arn

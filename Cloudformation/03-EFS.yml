@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+#EFS作成
+  FileSystemResource:
+    Type: "AWS::EFS::FileSystem"
+    Properties:
+      Encrypted: true
+      
+      FileSystemTags: 
+      - 
+        Key: "Name"
+        Value: "WP-EFS"
+
+#マウントターゲット作成
+  MountTargetResource1:
+    Type: "AWS::EFS::MountTarget"
+    Properties:
+      FileSystemId: !Ref FileSystemResource
+      SecurityGroups: 
+      - !Ref SGforEFS
+      SubnetId: !ImportValue pubsubnet-1
+
+  MountTargetResource2:
+    Type: "AWS::EFS::MountTarget"
+    Properties:
+      FileSystemId: !Ref FileSystemResource
+      SecurityGroups: 
+      - !Ref SGforEFS
+      SubnetId: !ImportValue pubsubnet-2
+
+  SGforEFS:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: SG-EFS
+      GroupDescription: hebiishiSGEFS
+      VpcId: !ImportValue wordpress-vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: SG-EFS
+
+Outputs:
+  EFSOutput:
+    Value: !GetAtt FileSystemResource.FileSystemId
+    Export:
+      Name: efs-id

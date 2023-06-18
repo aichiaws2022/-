@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+#SNSトピック作成
+  SNSTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      TopicName: Alarm-SNS
+      Tags: 
+      - 
+        Key: Name
+        Value: "Alarm-SNS"
+
+#サブスクリプション設定
+  Subscription:
+    Type: "AWS::SNS::Subscription"
+    Properties:
+      TopicArn: !Ref SNSTopic
+      Endpoint: "einenweltes@yahoo.co.jp"
+      Protocol: email
+
+#Outputsセクション設定
+Outputs:
+  SNSOutput1:
+    Value: !Ref SNSTopic
+    Export:
+      Name: Alarm-sns-topic-arn

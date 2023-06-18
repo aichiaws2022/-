@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+#ALB作成
+  LoadBalancerResource:
+    Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    Properties:
+      Name: WP-ALB
+      Scheme: internet-facing
+      Type: application
+      Subnets: 
+      - !ImportValue pubsubnet-1
+      - !ImportValue pubsubnet-2
+      SecurityGroups: 
+      - !ImportValue sg-for-alb
+      IpAddressType: ipv4
+      Tags:
+        -
+         Key: Name
+         Value: WP-ALB
+
+  
+
+#ターゲットグループ作成
+  TargetGroupResource:
+    Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+    Properties:
+      Name: WP-TG
+      VpcId: !ImportValue wordpress-vpc
+      Protocol: HTTP
+      ProtocolVersion: HTTP1
+      Port: 80
+      TargetType: instance
+      Targets: 
+      - 
+        Id: !ImportValue clf-ec2-1
+        Port: 80
+      - 
+        Id: !ImportValue clf-ec2-2
+        Port: 80
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 7
+      HealthCheckPath: /wp-includes/images/blank.gif
+      HealthCheckPort: traffic-port
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 5
+      UnhealthyThresholdCount: 2
+      Matcher: 
+        HttpCode: "200,301"
+      Tags:
+      -
+        Key: Name
+        Value: WP-TG
+
+#リスナー設定
+  ListenerResource:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancerResource
+      Port: 80
+      Protocol: HTTP
+      DefaultActions: 
+      - 
+        TargetGroupArn: !Ref TargetGroupResource
+        Type: forward
+
+#Outputsセクション設定  
+Outputs:
+  ALBOutput1:
+    Value: !GetAtt LoadBalancerResource.DNSName
+    Export:
+      Name: alb-dnsname
+  ALBOutput2:
+    Value: !GetAtt LoadBalancerResource.CanonicalHostedZoneID
+    Export:
+      Name: alb-hostzoneid
+  ALBOutput3:
+    Value: !Ref LoadBalancerResource
+    Export:
+      Name: alb-arn
+  ALBOutput4:
+    Value: !Ref TargetGroupResource
+    Export:
+      Name: alb-targetgroup  

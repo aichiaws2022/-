@@ -1,0 +1,56 @@
+ AWSTemplateFormatVersion: "2010-09-09"
+
+ Parameters:
+   HostedZoneName:
+    Description: domain name
+    Type: String
+
+ Resources:
+  Route53HostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: !Sub "${HostedZoneName}."
+      
+        
+  
+  route53RS:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref Route53HostedZone
+      Name: !Sub "${HostedZoneName}."
+      
+      Type: A
+      AliasTarget: 
+        HostedZoneId: !ImportValue alb-hostzoneid
+        DNSName: !ImportValue alb-dnsname
+        EvaluateTargetHealth: true
+
+
+  CertificateResource:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref route53RS
+      ValidationMethod: DNS
+      DomainValidationOptions:
+      #ドメイン検証用レコードを追加
+        - DomainName: !Ref route53RS
+          HostedZoneId: !Ref Route53HostedZone
+      Tags:
+      -
+        Key: "Name"
+        Value: "WP-ACM" 
+
+  ListenerResource2:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      LoadBalancerArn: !ImportValue alb-arn
+      Port: 443
+      Protocol: "HTTPS"
+      SslPolicy: "ELBSecurityPolicy-2016-08"
+      Certificates: 
+      - 
+        CertificateArn: !Ref CertificateResource
+      DefaultActions: 
+      - 
+        TargetGroupArn: !ImportValue alb-targetgroup
+        Type: "forward"

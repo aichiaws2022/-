@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: "2010-09-09"  
+
+
+
+Resources:
+
+
+  WebInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-052c9af0c988f8bbd 
+      IamInstanceProfile: !ImportValue InstanceProfile
+      
+      
+      SecurityGroupIds:
+        - !Ref SGEC2
+      SubnetId: !ImportValue prisubnet-1
+      
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            DeleteOnTermination: "true"
+            VolumeType: "gp3"
+            VolumeSize: 8
+            Encrypted: true
+            Iops: 3000
+
+      UserData:
+        Fn::Base64: !Sub
+          - |
+          
+         
+          
+       
+             #!/bin/bash
+             sudo yum -y update
+             sudo amazon-linux-extras install php7.4 -y
+             sudo yum -y install mysql httpd php-mbstring php-xml
+             sudo yum install -y amazon-efs-utils
+             sleep 90
+             sudo mount -t efs ${FileSystemId}:/ /var/www/html/
+             sudo wget http://ja.wordpress.org/latest-ja.tar.gz -P /tmp/
+             sudo tar zxvf /tmp/latest-ja.tar.gz -C /tmp
+             sudo cp -r /tmp/wordpress/* /var/www/html/
+             sudo chown apache:apache -R /var/www/html
+             sudo systemctl start httpd.service
+
+          - { FileSystemId: !ImportValue efs-id }
+             
+            
+           
+         
+
+            
+     
+         
+      Tags:
+      - Key: Name
+        Value: test-wordpress-1
+
+      
+
+  WebInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-052c9af0c988f8bbd 
+      IamInstanceProfile: !ImportValue InstanceProfile
+      
+      SecurityGroupIds:
+        - !Ref SGEC2
+      SubnetId: !ImportValue prisubnet-2
+      
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            DeleteOnTermination: "true"
+            VolumeType: "gp3"
+            VolumeSize: 8
+            Encrypted: true
+            Iops: 3000
+
+      UserData:
+        Fn::Base64: !Sub
+          - |
+          
+         
+          
+       
+             #!/bin/bash
+             sudo yum -y update
+             sudo amazon-linux-extras install php7.4 -y
+             sudo yum -y install mysql httpd php-mbstring php-xml
+             sudo yum install -y amazon-efs-utils
+             sleep 90
+             sudo mount -t efs ${FileSystemId}:/ /var/www/html/
+             sudo wget http://ja.wordpress.org/latest-ja.tar.gz -P /tmp/
+             sudo tar zxvf /tmp/latest-ja.tar.gz -C /tmp
+             sudo cp -r /tmp/wordpress/* /var/www/html/
+             sudo chown apache:apache -R /var/www/html
+             sudo systemctl start httpd.service
+
+          - { FileSystemId: !ImportValue efs-id }
+            
+     
+          
+      Tags:
+      - Key: Name
+        Value: test-wordpress-2
+
+  SGEC2:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: SGEC2
+      GroupDescription: SGEC2
+      VpcId: !ImportValue wordpress-vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref SGALB
+        
+      Tags:
+        - Key: Name
+          Value: SG-EC2
+
+  SGALB:
+     Type: AWS::EC2::SecurityGroup
+     Properties:
+      GroupName: WP-ALB-SG
+      GroupDescription: ALB
+      VpcId: !ImportValue wordpress-vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: WP-ALB-SG          
+
+
+Outputs:
+  ec2Output1:
+    Value: !Ref WebInstance1
+    Export:
+      Name:  clf-ec2-1
+  ec2Output2:
+    Value: !Ref WebInstance2
+    Export:
+      Name:  clf-ec2-2
+  ec2Output:
+    Value: !Ref SGEC2
+    Export:
+      Name:  sg-for-ec2
+  albsgoutput:
+    Value: !Ref SGALB
+    Export:
+      Name:  sg-for-alb
